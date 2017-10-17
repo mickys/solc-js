@@ -1,3 +1,5 @@
+var fs = require('fs');
+var exec = require('sync-exec');
 var translate = require('./translate.js');
 var linker = require('./linker.js');
 var requireFromString = require('require-from-string');
@@ -43,13 +45,19 @@ function setupMethods (soljson) {
       var output;
       try {
         args.push(cb);
-        output = compile.apply(undefined, args);
+        output = compileUsingBinary(args[0]);
       } catch (e) {
         soljson.Runtime.removeFunction(cb);
         throw e;
       }
       soljson.Runtime.removeFunction(cb);
       return output;
+    };
+
+    var compileUsingBinary = function (input) {
+        var filename = '/tmp/truffle-solc-bin.json';
+        fs.writeFileSync(filename, input);
+        return exec('solc --standard-json < '+filename).stdout;
     };
 
     var compileInternal = soljson.cwrap('compileJSONCallback', 'string', ['string', 'number', 'number']);
